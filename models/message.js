@@ -25,7 +25,10 @@ const messageSchema= new mongoose.Schema({
    content:{
     type:String,
     required:true
-   } 
+   }, 
+   roomId:{type:mongoose.Schema.Types.ObjectId,
+    ref:'Room',
+    required:true}
 })
 
 
