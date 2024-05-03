@@ -6,7 +6,8 @@ const router = express.Router();
 const mongoose=require('mongoose');
 const { Product } = require('../models/product');
 const { Message } = require('../models/message');
-const {User}=require('../models/user')
+const {User}=require('../models/user');
+const { Room } = require('../models/room');
 
 
 
@@ -33,7 +34,7 @@ router.get(`/:id`, async (req, res) =>{
 })
 
 router.get(`/userGiver/:id`, async (req, res) =>{
-    const reservation = await Reservation.find({userGiver:req.params.id})
+    const reservation = await Reservation.find({userGiver:req.params.id}).populate('product').populate('userGetter')
     
 if(!reservation) {
         res.status(500).json({success: false})
@@ -41,21 +42,32 @@ if(!reservation) {
     res.send(reservation);
 })
 router.get(`/userGetter/:id`, async (req, res) =>{
-    const reservation = await Reservation.find({userGetter:req.params.id})
+    const reservation = await Reservation.find({userGetter:req.params.id}).populate('product').populate('userGiver')
+    
     
 if(!reservation) {
         res.status(500).json({success: false})
     } 
     res.send(reservation);
 })
-
+router.get(`/user/:id`,async(req,res)=>{
+    const reservation = await Reservation.find({$or: [
+        { userGiver:req.params.id },
+        { userGetter:req.params.id}
+    ],status:'Pending'}).populate('product').populate('userGetter').populate('userGiver') 
+    if(!reservation) {
+        return res.status(500).json({success: false})
+       } 
+       return res.send(reservation);
+})
 router.get(`/product/:id`, async (req, res) =>{
-    const reservation = await Reservation.find({product:req.params.id})
+    console.log(req.params.id)
+    const reservation = await Reservation.find({product:req.params.id}).populate('product').populate('userGetter')
     
 if(!reservation) {
-        res.status(500).json({success: false})
+     return res.status(500).json({success: false})
     } 
-    res.send(reservation);
+    return res.send(reservation);
 })
 
 
@@ -136,34 +148,83 @@ if(!reservation) {
 })
 
 router.post('/', async (req,res)=>{
-    console.log(req.body.product)
+    const user1=await User.findById(req.body.userGetter)
+    const user2=await User.findById(req.body.userGiver)
+    const product= await Product.findById(req.body.product)
+    console.log(req.body.userGetter,req.body.userGiver)
+    console.log(user1.id,user2.id)
+    
     let reservation = new Reservation({
         product:req.body.product,
+       
         shippingAddress1: req.body.shippingAddress1,
         phone: req.body.phone,
         status: req.body.status,
+        nameOfProduct:product.name,
         totalPrice: 100,
         userGetter: req.body.userGetter,
         userGiver:req.body.userGiver,
         dateStarted:req.body.dateStarted,
         dateEnd: req.body.dateEnd
-    })
-    reservation = await reservation.save();
 
-    if(!reservation)
-    return res.status(400).send('the reservation cannot be created!')
-        const product= await Product.findById(req.body.product)
-        const user=await User.findById(req.body.userGetter)
+    })
+    
+    const room = await Room.findOne({
+        $or: [
+          { name: user1.id + ' ' + user2.id },
+          { name: user2.id + ' ' + user1.id }
+        ]
+      });
+    console.log(room)
+    if(!room){
+        console.log('aaa')
+           let room1= new Room({
+            user1:user1.id,
+            user2:user2.id,
+            
+            name:user2.id+' '+user1.id,
+            lastTimeUpdated:Date.now()
+
+
+        })
+        room1=await room1.save()
+        console.log(room1)
         let message=new Message({
-        senderName:user.name,
-        senderImage:user.image,
-        sender:req.body.userGetter,
-        reciver:req.body.userGiver,
-        content:'Ο χρήστης '+user.name+' θέλει να νοικιάσει το '+product.name+' από τις '+req.body.dateStarted + ' μέχρι τις ' +req.body.dateEnd
-     })   
-     message=await message.save()
-     console.log(message)
-    res.status(201).send(reservation);
+            roomId:room1.id,
+            sender:req.body.userGetter,
+            reciver:req.body.userGiver,
+            content:'Ο χρήστης '+user1.name+' θέλει να νοικιάσει το '+product.name+' από τις '+req.body.dateStarted + ' μέχρι τις ' +req.body.dateEnd
+         })   
+         message=await message.save()
+         console.log(message)
+         reservation = await reservation.save();
+        if(!reservation){
+        return res.status(400).send('the reservation cannot be created!')}
+         res.status(201).send(reservation);
+            
+    }
+    else{
+        console.log(room)
+        console.log('bbbb')
+        let message=new Message({
+            senderName:user1.name,
+            roomId:room.id,
+            senderImage:user1.image,
+            sender:req.body.userGetter,
+            reciver:req.body.userGiver,
+            content:'Ο χρήστης '+user1.name+' θέλει να νοικιάσει το '+product.name+' από τις '+req.body.dateStarted + ' μέχρι τις ' +req.body.dateEnd
+         })   
+         message=await message.save()
+         console.log(message)
+         reservation = await reservation.save();
+    if(!reservation){
+        return res.status(400).send('the reservation cannot be created!')}
+         res.status(201).send(reservation);
+            
+    }
+    
+        
+     
 })
 
 

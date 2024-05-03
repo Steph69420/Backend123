@@ -11,20 +11,6 @@ const roomSchema=new mongoose.Schema({
         ref:'User',
         required:true
     },
-    user1Image:{
-        type:String
-    },
-    user2Image:{
-        type:String
-    },
-    user1Name:{
-        type:String,
-        required:true
-    },
-    user2Name:{
-        type:String,
-        required:true
-    },
     name:{
         type:String,
         required:true

@@ -73,11 +73,7 @@ io.on('connection', (socket) => {
                 const usr2= await User.findById(otherUserId)
                 let room1=new Room({
                     user1:userId,
-                    user1Image:usr1.image,
-                    user1Name:usr1.name,
                     user2:otherUserId,
-                    user2Image:usr2.image,
-                    user2Name:usr2.name,
                     name:userId+' '+otherUserId
                 })
                  room1=await room1.save();
@@ -121,9 +117,7 @@ io.on('connection', (socket) => {
             
             
                 message1=new Message({
-                senderName:user.name,
                 sender:message.senderId,
-                senderImage:user.image,
                 reciver:message.receiverId,
                 content:message.text,
                 roomId:roomName._id,

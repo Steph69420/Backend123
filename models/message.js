@@ -6,13 +6,6 @@ const messageSchema= new mongoose.Schema({
         ref:'User',
         required:true
     },
-    senderName:{
-        type:String,
-        required:true,
-    },
-    senderImage:{
-        type:String,
-    },
     reciver:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'User',

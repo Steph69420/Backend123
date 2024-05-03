@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    numberOfPendingRes:{
+        type:String,
+        default:'0'
+    },
     country: {
         type: String,
         default: ''
