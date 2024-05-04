@@ -15,7 +15,8 @@ const authJwt = jwt({
             {url: /\/api\/v1\/reservations(.*)/ , methods: ['GET', 'OPTIONS','POST'] },
             '/api/v1/users/login',
             '/api/v1/users/register',
-            '/api/v1/users/googleSignIn'
+            '/api/v1/users/googleSignIn',
+            '/socket.io'
 
         ]
      })
