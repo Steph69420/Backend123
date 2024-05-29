@@ -42,13 +42,22 @@ const userSchema = new mongoose.Schema({
         default: ''
     },
     numberOfPendingRes:{
-        type:String,
-        default:'0'
+        type:Number,
+	
+        default:0
     },
     country: {
         type: String,
         default: ''
-    }
+    },
+    unreadNotifications:{
+	type:Number,
+	default:0
+    },
+    lastItemsVisited:{
+	type:[mongoose.Schema.Types.ObjectId],
+	ref:'Product',
+	default:[]}
 
 });
 

@@ -8,7 +8,7 @@ const { Product } = require('../models/product');
 const { Message } = require('../models/message');
 const {User}=require('../models/user');
 const { Room } = require('../models/room');
-
+const { Notifications } = require('../models/notification');
 
 
 router.get(`/`, async (req, res) =>{
@@ -22,7 +22,7 @@ router.get(`/`, async (req, res) =>{
 
 router.get(`/:id`, async (req, res) =>{
     const reservation = await Reservation.findById(req.params.id)
-    .populate('user', 'name')
+    .populate('userGiver').populate('userGetter')
     .populate(  {
             path : 'product', populate: 'category'} 
         );
@@ -54,7 +54,7 @@ router.get(`/user/:id`,async(req,res)=>{
     const reservation = await Reservation.find({$or: [
         { userGiver:req.params.id },
         { userGetter:req.params.id}
-    ],status:'Pending'}).populate('product').populate('userGetter').populate('userGiver') 
+    ],status:'accepted'}).populate('product').populate('userGetter').populate('userGiver') 
     if(!reservation) {
         return res.status(500).json({success: false})
        } 
@@ -62,7 +62,7 @@ router.get(`/user/:id`,async(req,res)=>{
 })
 router.get(`/product/:id`, async (req, res) =>{
     console.log(req.params.id)
-    const reservation = await Reservation.find({product:req.params.id}).populate('product').populate('userGetter')
+    const reservation = await Reservation.find({product:req.params.id,status:'accepted'}).populate('product').populate('userGetter')
     
 if(!reservation) {
      return res.status(500).json({success: false})
@@ -148,11 +148,14 @@ if(!reservation) {
 })
 
 router.post('/', async (req,res)=>{
+
+	
     const user1=await User.findById(req.body.userGetter)
+
     const user2=await User.findById(req.body.userGiver)
     const product= await Product.findById(req.body.product)
-    console.log(req.body.userGetter,req.body.userGiver)
-    console.log(user1.id,user2.id)
+    
+    
     
     let reservation = new Reservation({
         product:req.body.product,
@@ -168,63 +171,19 @@ router.post('/', async (req,res)=>{
         dateEnd: req.body.dateEnd
 
     })
-    
-    const room = await Room.findOne({
-        $or: [
-          { name: user1.id + ' ' + user2.id },
-          { name: user2.id + ' ' + user1.id }
-        ]
-      });
-    console.log(room)
-    if(!room){
-        console.log('aaa')
-           let room1= new Room({
-            user1:user1.id,
-            user2:user2.id,
-            
-            name:user2.id+' '+user1.id,
-            lastTimeUpdated:Date.now()
+await reservation.save()
+let notification= new Notifications({
+        receiver:req.body.userGiver,
+        content:'Ο χρήστης '+user1.name+' θελει να νοικιασει το '+product.name+ ' απο τις '+req.body.dateStarted+' μεχρι τις '+req.body.dateEnd,
+        type:'a',
+	reservation:reservation.id
 
 
-        })
-        room1=await room1.save()
-        console.log(room1)
-        let message=new Message({
-            roomId:room1.id,
-            sender:req.body.userGetter,
-            reciver:req.body.userGiver,
-            content:'Ο χρήστης '+user1.name+' θέλει να νοικιάσει το '+product.name+' από τις '+req.body.dateStarted + ' μέχρι τις ' +req.body.dateEnd
-         })   
-         message=await message.save()
-         console.log(message)
-         reservation = await reservation.save();
-        if(!reservation){
-        return res.status(400).send('the reservation cannot be created!')}
-         res.status(201).send(reservation);
-            
-    }
-    else{
-        console.log(room)
-        console.log('bbbb')
-        let message=new Message({
-            senderName:user1.name,
-            roomId:room.id,
-            senderImage:user1.image,
-            sender:req.body.userGetter,
-            reciver:req.body.userGiver,
-            content:'Ο χρήστης '+user1.name+' θέλει να νοικιάσει το '+product.name+' από τις '+req.body.dateStarted + ' μέχρι τις ' +req.body.dateEnd
-         })   
-         message=await message.save()
-         console.log(message)
-         reservation = await reservation.save();
-    if(!reservation){
-        return res.status(400).send('the reservation cannot be created!')}
-         res.status(201).send(reservation);
-            
-    }
-    
-        
-     
+    })
+	user2.unreadNotifications=user2.unreadNotifications+1
+	await notification.save()
+	await user2.save()
+    return res.status(201).send('Η κρατηση αποθηκευτηκε με επιτυχια');
 })
 
 
@@ -235,6 +194,7 @@ router.put('/:id',async (req, res)=> {
             status: req.body.status
         },
         { new: true}
+
     )
 
     if(!reservation)

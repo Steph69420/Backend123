@@ -38,6 +38,7 @@ const orderRoutes = require('./routers/orders');
 const reservationRoutes = require('./routers/reservations');
 const messagesRoutes = require('./routers/messages');
 const roomsRoutes=require('./routers/rooms')
+const notificationsRoutes=require('./routers/notifications')
 
 app.use(`${process.env.API_URL}/products`, productsRoutes);
 app.use(`${process.env.API_URL}/categories`, categoriesRoutes);
@@ -46,7 +47,7 @@ app.use(`${process.env.API_URL}/orders`, orderRoutes);
 app.use(`${process.env.API_URL}/reservations`, reservationRoutes);
 app.use(`${process.env.API_URL}/messages`, messagesRoutes);
 app.use(`${process.env.API_URL}/rooms`,roomsRoutes)
-
+app.use(`${process.env.API_URL}/notifications`,notificationsRoutes)
 mongoose.connect(process.env.CONNECTION_STRING)
 .then(() => {
     console.log('Database Connection is Ready...')
@@ -142,5 +143,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(8081, () => { // Use server.listen instead of app.listen
-    console.log(`Server is running on http://localhost:8081`);
+    console.log(`Server is running on http://localhost:8089`);
 });

@@ -12,13 +12,49 @@ router.get(`/`,async (req,res)=> {
     res.send(userList);
 })
 router.get('/:id', async(req,res)=>{
-    const user= await User.findById(req.params.id).select('-passwordHash');
+    const user= await User.findById(req.params.id).select('-passwordHash').populate({
+      path: 'lastItemsVisited',
+      populate: {
+        path: 'user',
+        
+      }
+    })
+    .exec();
     if(!user){
        return res.status(500).json({message: 'The user with given id was not found'})
     }
     res.status(200).send(user);
 })
+router.get('/updateNumRandevous/:id', async (req, res) => {
+console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+ const [userGiver,userGetter]=req.params.id.split(',')
+console.log(userGiver,userGetter) 
+ try {
+    const userGiverId = userGiver;
+    const userGetterId = userGetter;
 
+    // Find the user by ID
+    const user1 = await User.findById(userGiverId);
+	const user2 = await User.findById(userGetterId);
+console.log(user1,user2)
+    if (!user1) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+if (!user2) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the specified field and numberOfPendingRes
+    user1.numberOfPendingRes = user1.numberOfPendingRes + 1;
+    await user1.save()
+    user2.numberOfPendingRes = user2.numberOfPendingRes + 1;
+    // Save the updated user
+    await user2.save();
+    res.json({ message: 'User updated successfully', user1 });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 router.post('/',async (req,res)=>{
     let user = new User({
         name: req.body.name,
@@ -38,6 +74,19 @@ router.post('/',async (req,res)=>{
     return res.status(400).send('the user cannot be created!')
     res.send(user);
 })
+router.post('/updateLastItems',async(req,res)=>{
+	console.log('haha')
+	const user=await User.findById(req.headers.user);
+	if(user.lastItemsVisited.length==10){
+	user.lastItemsVisited.pop()}
+	user.lastItemsVisited=user.lastItemsVisited.filter(item=>item!=req.headers.product)
+	user.lastItemsVisited.push(req.headers.product)
+	
+	await user.save();
+	console.log('OK')
+	return res.status(201).json('OK');
+	})
+
 router.post('/googleSignIn', async (req, res) => {
     const secret = process.env.secret;
     console.log(req.body)
